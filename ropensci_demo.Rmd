@@ -1,0 +1,70 @@
+## rOpenSci Demo
+
+[rOpenSci](http://ropensci.org/)
+
+### Getting data from the literature - PLOS
+
+This example demonstrates how you can easily get literature data from Public Library of Science from R. 
+
+#### Install rplos
+
+```{r install, eval=FALSE}
+install.packages(c("rplos","tm"))
+```
+
+#### Load rplos
+
+```{r load}
+library(rplos)
+```
+
+#### Search for mentions of Fisher in the author field, returning title and author fields, searching in full papers (not including figure captions, etc.), returning only 25 results.
+
+```{r searchplos, message=FALSE, warning=FALSE}
+out <- searchplos(terms='author:"Fisher"', fields='title,author', toquery='doc_type:full', limit=25)
+head(out) # first six rows
+```
+
+#### Quickly visualize variation in frequency of word usage in PLOS journals
+
+```{r plosword, message=FALSE, warning=FALSE}
+library(ggplot2)
+plosword(list('monkey','Helianthus','sunflower','protein','whale'), vis = TRUE)$plot + 
+  theme_grey(base_size=18)
+```
+
+#### Get abstracts of 500 papers, and use the tm package for text mining. 
+
+Get 500 abstracts from PLOS One only. The `*:*` is special syntax to denote *give back everything*
+
+```{r getabstracts, message=FALSE, warning=FALSE}
+out <- searchplos(terms='*:*', fields='abstract', toquery=list('cross_published_journal_key:PLoSONE', 'doc_type:full'), limit=500)
+out$abstract[1:3] # take a peek
+```
+
+Load the tm package, and create a document library
+
+```{r corpus, message=FALSE, warning=FALSE}
+library(tm)
+(corpus <- Corpus(VectorSource(out$abstract)))
+```
+
+Create a term-document matrix from the corpus, and inspect it. 
+
+```{r tdm, message=FALSE, warning=FALSE}
+tdm <- DocumentTermMatrix(corpus,
+                          control = list(removePunctuation = TRUE,
+                                         stopwords = TRUE, 
+                                         removeNumbers = TRUE))
+inspect(tdm[1:5,1:5])
+```
+
+Various operations on document term matrices
+
+```{r freqterm, message=FALSE, warning=FALSE}
+# find terms that occur at least five times across documents
+findFreqTerms(tdm, 250)
+
+# find associations (terms which correlate) with at least 0.3 correlation for the term "result"
+findAssocs(tdm, "cells", 0.3)
+```
