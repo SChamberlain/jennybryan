@@ -9,7 +9,7 @@ This example demonstrates how you can easily get literature data from Public Lib
 #### Install rplos
 
 ```{r install, eval=FALSE}
-install.packages(c("rplos","tm"))
+install.packages(c("rplos","tm","ggplot2"), dependencies=TRUE)
 ```
 
 #### Load rplos
@@ -28,11 +28,38 @@ head(out) # first six rows
 
 #### Quickly visualize variation in frequency of word usage in PLOS journals
 
+A built in function in `rplos` called `plosword` makes a bar plot of frequency of terms across PLOS articles. 
+
 ```{r plosword, message=FALSE, warning=FALSE}
 library(ggplot2)
 plosword(list('monkey','Helianthus','sunflower','protein','whale'), key=key, vis = TRUE)$plot + 
   theme_grey(base_size=18)
 ```
+
+Or, we can do the same thing manually. First, install a few packages if you don't have them already.
+
+```{r eval=FALSE}
+install.packages(c("RCurl","RJSONIO"))
+```
+
+Then get counts of terms across papers, then plot using `ggplot2`
+
+```{r visualize, message=FALSE, warning=FALSE}
+library(RCurl)
+library(RJSONIO)
+search <- function(x) {
+  args <- list(q = x, fl = 'id', wt = 'json')
+  tt <- getForm("http://api.plos.org/search", .params = args)
+  fromJSON(I(tt))$response$numFound
+}
+terms <- c('monkey','Helianthus','sunflower','protein','whale')
+temp <- sapply(terms, search, USE.NAMES=FALSE)
+df <- data.frame(Term = terms, No_Articles = temp)
+ggplot(df, aes(x=Term, y=No_Articles)) + 
+  theme_grey(base_size=18) +
+  geom_bar(stat="identity")
+```
+
 
 #### Get abstracts of 500 papers, and use the tm package for text mining. 
 
